@@ -9,6 +9,7 @@ const versionRoutes = require('./routes/version.routes');
 const cronRoutes = require('./routes/cronRoutes');
 const goalRoutes = require('./routes/goalRoutes');
 const cardRoutes = require('./routes/cardRoutes');
+const budgetRoutes = require('./routes/budgetRoutes');
 const connectDB = require('./config/db');
 
 connectDB();
@@ -20,7 +21,10 @@ app.use(helmet());
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Cache-Control, Pragma, Expires, Idempotency-Key'
+  );
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
@@ -70,6 +74,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/version', versionRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/cards', cardRoutes);
+app.use('/api/budgets', budgetRoutes);
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: 'Internal Server Error' });
