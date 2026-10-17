@@ -12,7 +12,11 @@ const cardRoutes = require('./routes/cardRoutes');
 const budgetRoutes = require('./routes/budgetRoutes');
 const connectDB = require('./config/db');
 
-connectDB();
+// 🆕 جلوگیری از کرش پروسه
+process.on('unhandledRejection', (e) => console.error('unhandledRejection', e));
+process.on('uncaughtException', (e) => console.error('uncaughtException', e));
+
+// 🗑️ خط connectDB(); از اینجا حذف شد
 
 const app = express();
 
@@ -66,6 +70,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// 🆕 اتصال به دیتابیس برای هر درخواست (قبل از route ها)
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api/version')) return next(); // این route نیازی به DB نداره
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    err.status = 503;
+    next(err);
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -75,8 +91,13 @@ app.use('/api/version', versionRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api/budgets', budgetRoutes);
+
+// 🆕 error handler (کمی تغییر کرده)
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(err.stack || err.message);
+  if (err.status === 503) {
+    return res.status(503).json({ error: 'سرور موقتاً مشغوله، دوباره تلاش کنید' });
+  }
   res.status(err.status || 500).json({ error: 'Internal Server Error' });
 });
 
